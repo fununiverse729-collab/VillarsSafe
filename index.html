@@ -1890,7 +1890,7 @@ $("#verifyForm").addEventListener("submit", e => {
     return showError(form, "Please enter the 6-digit code from your email.");
   }
   form.elements.code.value = "";
-  showError(form, "That code is incorrect or has expired. Please check your email and try again.");
+  showError(form, "This email address is not registered in your school's student database. Please check with your school or try a different email.");
   form.elements.code.focus();
 });
 
