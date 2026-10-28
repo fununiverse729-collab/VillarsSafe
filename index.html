@@ -1849,6 +1849,20 @@ $$(".js-signout").forEach(b => b.addEventListener("click", signOut));
  */
 let verifySchool = null;
 
+/** Checks every sign-up field before a code is requested. Returns an error message or null. */
+function checkJoinDetails(el) {
+  if (!cleanName(el.firstName.value) || !cleanName(el.lastName.value)) return "Please enter your real first and last name.";
+  if (!Object.hasOwn(APPROVED_DOMAINS, el.school.value)) return "Please select your school.";
+  const mail = normaliseEmail(el.email.value);
+  const emailSchool = schoolForEmail(mail);
+  if (!emailSchool) return MSG_NOT_APPROVED;
+  if (emailSchool !== el.school.value) return "That email address belongs to a different school.";
+  const pwIssue = passwordProblem(el.password.value, mail);
+  if (pwIssue) return pwIssue;
+  if (el.password.value !== el.confirm.value) return "Passwords do not match.";
+  return null;
+}
+
 function gateSchoolEmail(form, rawEmail) {
   const mail = normaliseEmail(rawEmail);
   const school = schoolForEmail(mail);
@@ -1875,10 +1889,9 @@ $("#verifyForm").addEventListener("submit", e => {
   if (!/^\d{6}$/.test(form.elements.code.value)) {
     return showError(form, "Please enter the 6-digit code from your email.");
   }
-  form.reset();
-  closeModal("verifyModal");
-  $("#wipSchool").textContent = SCHOOL_LABELS[verifySchool] || verifySchool;
-  openModal("wipModal");
+  form.elements.code.value = "";
+  showError(form, "That code is incorrect or has expired. Please check your email and try again.");
+  form.elements.code.focus();
 });
 
 $("#resendCode").addEventListener("click", () => toast("A new code has been sent."));
@@ -1916,7 +1929,10 @@ $("#signinForm").addEventListener("submit", e => {
 $("#joinForm").addEventListener("submit", e => {
   e.preventDefault();
   const form = e.currentTarget;
-  if (gateSchoolEmail(form, form.elements.email.value)) return;
+  const el0 = form.elements;
+  const joinErr = checkJoinDetails(el0);
+  if (joinErr) return showError(form, joinErr);
+  if (gateSchoolEmail(form, el0.email.value)) return;
   if (!cryptoReady()) return showError(form, "Your browser does not support secure sign-in.");
   const el = form.elements;
   withBusy(form, async () => {
